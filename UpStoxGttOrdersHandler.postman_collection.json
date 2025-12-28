@@ -1,0 +1,76 @@
+{
+	"info": {
+		"_postman_id": "16cb3012-7303-435d-93d0-91903df4bff1",
+		"name": "UpStoxGttOrdersHandler",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "32540147"
+	},
+	"item": [
+		{
+			"name": "readOrdersFromGoogleSheet",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/v1/googleSheet/readOrdersFromGoogleSheet",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"v1",
+						"googleSheet",
+						"readOrdersFromGoogleSheet"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "isUserConnectedWithUpStoxServer",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/v1/upstox/isUserConnectedWithUpStoxServer",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"v1",
+						"upstox",
+						"isUserConnectedWithUpStoxServer"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "logoutUserFromUpstox",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/v1/upstox/logoutUserFromUpstox",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"v1",
+						"upstox",
+						"logoutUserFromUpstox"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
