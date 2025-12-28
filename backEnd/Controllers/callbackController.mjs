@@ -49,11 +49,12 @@ const loginAndGetAuthTokenFromUpstox = async (req, res, next) => {
         console.log("Login Successfull !");
       }
     });
+    res.redirect(`${process.env.FRONTEND_URL}/?auth=success`);
 
-    res.status(200).json({
-      success: true,
-      apiData: authData,
-    });
+    // res.status(200).json({
+    //   success: true,
+    //   apiData: authData,
+    // });
   } catch (error) {
     console.log(error);
     return next(new CustomError(500, error.message));

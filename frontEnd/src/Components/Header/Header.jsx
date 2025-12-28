@@ -6,28 +6,33 @@ import urls from "../../urls.mjs";
 export default function Header() {
   const [stateIsUserLoggedIn, setStateIsUserLoggedIn] = useState(null);
   const [stateLoginURL, setStateLoginURL] = useState(null);
+
+  async function checkLoginStatus() {
+    let response = await fetch(urls?.isUserConnectedWithUpStoxServer);
+    response = await response.json();
+    if (response?.success) {
+      const data = response.apiData;
+      setStateIsUserLoggedIn(data.isUserLoggedIn);
+      if (!data.isUserLoggedIn) {
+        setStateLoginURL(data.loginURL);
+      }
+      // console.log(data);
+    } else {
+      console.log("Data not present in API Call !");
+    }
+  }
+
   useEffect(() => {
     // make an api call and check if user is logged in or not?
-    const makeApiCall = async () => {
-      try {
-        let response = await fetch(urls?.isUserConnectedWithUpStoxServer);
-        response = await response.json();
-        if (response?.success) {
-          const data = response.apiData;
-          setStateIsUserLoggedIn(data.isUserLoggedIn);
-          if (!data.isUserLoggedIn) {
-            setStateLoginURL(data.loginURL);
-          }
-          // console.log(data);
-        } else {
-          console.log("Data not present in API Call !");
-        }
-      } catch (error) {
-        console.log("Failed to make API Call !", error);
-      }
-    };
+    checkLoginStatus();
 
-    makeApiCall();
+    // now when user is redirect after login to same page check login status
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("auth") === "success") {
+      checkLoginStatus();
+      // clean URL
+      window.history.replaceState({}, "", "/");
+    }
   }, []);
 
   async function logoutUserFromUpstox() {
@@ -37,6 +42,8 @@ export default function Header() {
       if (response?.success) {
         const data = response.apiData;
         console.log(data.message);
+        await checkLoginStatus();
+        setStateIsUserLoggedIn(false);
       } else {
         console.log("Data not present in API Call !");
       }
@@ -48,12 +55,17 @@ export default function Header() {
   return (
     <header>
       {stateIsUserLoggedIn === false && (
-        <a className="loginButtonLink" href={stateLoginURL} target="_blank">
+        <button
+          className="btn"
+          onClick={() => {
+            window.location.href = stateLoginURL;
+          }}
+        >
           Login
-        </a>
+        </button>
       )}
       {stateIsUserLoggedIn === true && (
-        <button onClick={logoutUserFromUpstox} className="logoutBtn">
+        <button onClick={logoutUserFromUpstox} className="btn">
           Logout
         </button>
       )}

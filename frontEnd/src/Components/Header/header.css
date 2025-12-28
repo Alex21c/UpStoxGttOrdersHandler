@@ -1,16 +1,8 @@
-a.loginButtonLink {
-  text-decoration: none;
-  color: #cbbfbf;
-  background-color: navy;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-}
-
 header {
   margin-bottom: 1rem;
 }
 
-button.logoutBtn {
+button.btn {
   background: none;
   background: navy;
   color: #cbbfbf;
