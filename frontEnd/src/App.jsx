@@ -1,4 +1,3 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
 import OrdersTable from "./Components/OrdersTable/OrdersTable";
 import Header from "./Components/Header/Header";

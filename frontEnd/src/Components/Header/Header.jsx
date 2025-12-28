@@ -4,7 +4,7 @@ import { useState } from "react";
 import urls from "../../urls.mjs";
 
 export default function Header() {
-  const [stateIsUserLoggedIn, setStateIsUserLoggedIn] = useState(null);
+  const [stateIsUserLoggedIn, setStateIsUserLoggedIn] = useState(false);
   const [stateLoginURL, setStateLoginURL] = useState(null);
 
   async function checkLoginStatus() {
@@ -42,8 +42,10 @@ export default function Header() {
       if (response?.success) {
         const data = response.apiData;
         console.log(data.message);
-        await checkLoginStatus();
-        setStateIsUserLoggedIn(false);
+
+        setTimeout(async () => {
+          await checkLoginStatus();
+        }, 1000);
       } else {
         console.log("Data not present in API Call !");
       }
@@ -58,7 +60,11 @@ export default function Header() {
         <button
           className="btn"
           onClick={() => {
-            window.location.href = stateLoginURL;
+            if (stateLoginURL !== null) {
+              window.location.href = stateLoginURL;
+            } else {
+              console.log("ERROR : login url is null!");
+            }
           }}
         >
           Login
