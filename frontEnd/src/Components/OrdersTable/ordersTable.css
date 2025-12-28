@@ -1,0 +1,70 @@
+table.ordersTable {
+  border-collapse: collapse; /* merges borders */
+  width: 70rem;
+  font-size: 0.9rem;
+}
+
+table.ordersTable th,
+table.ordersTable td {
+  border: 1px solid #333;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+table.ordersTable th,
+table.ordersTable td {
+  border: 1px solid #333;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+table.ordersTable th:nth-child(1),
+table.ordersTable td:nth-child(1) {
+  width: 7rem;
+}
+
+table.ordersTable th:nth-child(2),
+table.ordersTable td:nth-child(2) {
+  width: 3rem;
+}
+
+table.ordersTable th:nth-child(3),
+table.ordersTable td:nth-child(3) {
+  width: 2rem;
+}
+table.ordersTable th:nth-child(4),
+table.ordersTable td:nth-child(4) {
+  width: 3rem;
+}
+
+table.ordersTable th:nth-child(5),
+table.ordersTable td:nth-child(5) {
+  width: 3rem;
+}
+table.ordersTable th:nth-child(6),
+table.ordersTable td:nth-child(6) {
+  width: 3rem;
+}
+
+table.ordersTable th:nth-child(11),
+table.ordersTable td:nth-child(11) {
+  width: 3rem;
+}
+
+table.ordersTable th:nth-child(12),
+table.ordersTable td:nth-child(12) {
+  width: 3rem;
+}
+
+table.ordersTable th:nth-child(13),
+table.ordersTable td:nth-child(13) {
+  width: 3rem;
+}
+
+table.ordersTable th {
+  font-weight: 600;
+}
+
+.orange {
+  color: orange;
+}

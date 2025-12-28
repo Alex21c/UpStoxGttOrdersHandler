@@ -1,0 +1,33 @@
+{
+  "name": "UpStoxGttOrdersHandler",
+  "version": "1.0.0",
+  "description": "place and cancels GTT orders on upstox",
+  "main": "index.mjs",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Alex21c/UpStoxGttOrdersHandler"
+  },
+  "keywords": [
+    "upstox",
+    "gtt orders",
+    "alex21c"
+  ],
+  "author": "Abhishek kumar",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Alex21c/UpStoxGttOrdersHandler/issues"
+  },
+  "homepage": "https://github.com/Alex21c/UpStoxGttOrdersHandler#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "firebase-admin": "^13.6.0",
+    "googleapis": "^169.0.0",
+    "morgan": "^1.10.1",
+    "upstox-js-sdk": "^2.21.0"
+  }
+}

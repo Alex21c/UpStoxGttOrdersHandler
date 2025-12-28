@@ -1,3 +1,10 @@
 # UpStoxGttOrdersHandler
 
-create and deletes GTT orders for upstox
+place and cancels GTT orders for upstox
+
+# Backend .env file
+
+API_KEY=get from upstox
+API_SECRET=get from upstox
+REDIRECT_URL=http://localhost:3000/callback
+FRONTEND_URL=http://localhost:4000
