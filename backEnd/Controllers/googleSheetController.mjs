@@ -1,36 +1,19 @@
 import CustomError from "../Utils/CustomError.mjs";
 import "dotenv/config";
-import { google } from "googleapis";
-import fs from "fs";
+
+import { helperReadOrdersFromGoogleSheet } from "../Utils/dbUtil.mjs";
 
 const readOrdersFromGoogleSheet = async (req, res, next) => {
   try {
-    const auth = new google.auth.GoogleAuth({
-      credentials: JSON.parse(fs.readFileSync("../backEnd/ApiKeys/googleSheetKeyUpStoxGttOrdersHandler.json")),
-      scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
-    });
-
-    const sheets = google.sheets({ version: "v4", auth });
-
-    const spreadsheetId = "1na54OOgt_hmK2kOG7hxzeD-TgUvCWOgDI4s7j3T3lmg";
-
+    let response;
     // First Weekly Orders
-    let range = "Weekly!b:n";
-    let response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range,
-    });
-    const weeklyOrders = response.data.values;
-    // console.log(weeklyOrders);
+    response = await helperReadOrdersFromGoogleSheet(false, true);
+    const weeklyOrders = response?.weeklyOrders;
 
     // Intraday Orders
-    range = "Intraday!b:n";
-    response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range,
-    });
-    const intradayOrders = response.data.values;
-    // console.log(intradayOrders);
+    response = await helperReadOrdersFromGoogleSheet(true, false);
+    const intradayOrders = response?.intradayOrders;
+
     res.status(200).json({
       success: true,
       apiData: {
@@ -38,21 +21,6 @@ const readOrdersFromGoogleSheet = async (req, res, next) => {
         weeklyOrders,
       },
     });
-
-    // res.status(200).json({
-    //   success: true,
-    //   apiData: {
-    //     intradayOrders: [
-    //       ["DATE", "SCRIPT", "TIMEFRAME (ENTRY)", "TradeType", "ZONE", "QUANTITY", "ENTRY", "SL", "TARGET", "RISK", "REWARD", "CAPITAL REQUIRED", "NseEqScriptKey"],
-    //       ["28-Dec-2025", "ASIANPAINT", "2Hr", "Delivery", "SZ", 1, 4000, 4010, 3950, "-₹10", "₹50", "₹4,000", "NSE_EQ|INE021A01026"],
-    //       ["28-Dec-2025", "ASIANPAINT", "2Hr", "Delivery", "DZ", 1, 4000, 3990, 4050, "-₹10", "₹50", "₹4,000", "NSE_EQ|INE021A01026"],
-    //     ],
-    //     weeklyOrders: [
-    //       ["DATE", "SCRIPT", "TIMEFRAME (ENTRY)", "TradeType", "ZONE", "QUANTITY", "ENTRY", "SL", "TARGET", "RISK", "REWARD", "CAPITAL REQUIRED", "NseEqScriptKey"],
-    //       ["28-Dec-2025", "ASIANPAINT", "2Hr", "Delivery", "DZ", 1, 4000, 3990, 4050, "-₹10", "₹50", "₹4,000", "NSE_EQ|INE021A01026"],
-    //     ],
-    //   },
-    // });
   } catch (error) {
     console.log(error);
     return next(new CustomError(500, error.message));
