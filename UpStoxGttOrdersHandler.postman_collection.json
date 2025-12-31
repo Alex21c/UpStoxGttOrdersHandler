@@ -71,6 +71,94 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "placeIntradayGttOrdersOnUpstox",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/v1/upstox/placeIntradayGttOrdersOnUpstox",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"v1",
+						"upstox",
+						"placeIntradayGttOrdersOnUpstox"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "placeWeeklyDeliveryGttOrdersOnUpstox",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/v1/upstox/placeWeeklyDeliveryGttOrdersOnUpstox",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"v1",
+						"upstox",
+						"placeWeeklyDeliveryGttOrdersOnUpstox"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "cancelAllIntradayGttOrdersOnUpstox",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/v1/upstox/cancelAllIntradayGttOrdersOnUpstox",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"v1",
+						"upstox",
+						"cancelAllIntradayGttOrdersOnUpstox"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "cancelAllWeeklyDeliveryGttOrdersOnUpstox",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/v1/upstox/cancelAllWeeklyDeliveryGttOrdersOnUpstox",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"v1",
+						"upstox",
+						"cancelAllWeeklyDeliveryGttOrdersOnUpstox"
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }
