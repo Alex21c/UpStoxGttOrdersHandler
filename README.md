@@ -26,5 +26,5 @@ npm install -g serve
 ## Access forntEnd dist using serve bat file
 
 ```bash
-launchFrontEnd.bat
+FrontEnd/launchFrontEnd.bat
 ```
