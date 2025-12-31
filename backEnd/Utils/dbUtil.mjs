@@ -1,6 +1,11 @@
 import { google } from "googleapis";
 import fs from "fs";
 import { db, admin } from "../firebase.js";
+export async function markUsedAsLoggedOutInFirebaseDB() {
+  await db.collection("brokerTokens").doc("upstox").set({
+    isUserLoggedIn: false,
+  });
+}
 
 export async function storeExecutedGttOrderIdIntoDB(orderTypeIntradayOrDelivery = "INTRADAY", orderId) {
   try {

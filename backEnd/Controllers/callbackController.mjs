@@ -12,6 +12,7 @@ export async function saveUpstoxTokenIntoFirebaseDB(code, accessToken, isUserLog
     accessToken,
     isUserLoggedIn,
     createdAt: new Date(),
+    // createdAt: new Date(new Date() - 2 * 24 * 60 * 60 * 1000),
   });
 }
 

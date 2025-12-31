@@ -1,0 +1,14 @@
+textarea.logger {
+  background: transparent;
+  color: skyblue;
+  width: 70rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+div.wrapperLogger {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}

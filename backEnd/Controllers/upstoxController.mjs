@@ -9,18 +9,23 @@ import { storeExecutedGttOrderIdIntoDB } from "../Utils/dbUtil.mjs";
 import { getExecutedGttOrderIdFromDB } from "../Utils/dbUtil.mjs";
 import { emptyExecutedOrdersIdsArrayInsideDB } from "../Utils/dbUtil.mjs";
 dotenv.config();
-
+import { markUsedAsLoggedOutInFirebaseDB } from "../Utils/dbUtil.mjs";
 // initialize upstox api
 let defaultClient = UpstoxClient.ApiClient.instance;
 var OAUTH2 = defaultClient.authentications["OAUTH2"];
 let apiInstance = new UpstoxClient.OrderApiV3();
 
-export async function markUsedAsLoggedOutInFirebaseDB() {
-  await db.collection("brokerTokens").doc("upstox").set({
-    isUserLoggedIn: false,
+function helperLogoutFromUpstox(apiInstance, apiVersion) {
+  return new Promise((resolve, reject) => {
+    apiInstance.logout(apiVersion, (error, data, response) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(data);
+      }
+    });
   });
 }
-
 const logoutUserFromUpstox = async (req, res, next) => {
   try {
     let apiInstance = new UpstoxClient.LoginApi();
@@ -34,16 +39,7 @@ const logoutUserFromUpstox = async (req, res, next) => {
     if (!OAUTH2.accessToken) {
       throw new Error("auth Token not present in firebase DB ! User might be already logged out !");
     }
-
-    apiInstance.logout(apiVersion, async (error, data, response) => {
-      if (error) {
-        console.error(error);
-        throw new Error(error.message);
-      } else {
-        await markUsedAsLoggedOutInFirebaseDB();
-        console.log("API called successfully. Returned data: " + data);
-      }
-    });
+    await helperLogoutFromUpstox(apiInstance, apiVersion);
 
     res.status(200).json({
       success: true,
@@ -54,6 +50,8 @@ const logoutUserFromUpstox = async (req, res, next) => {
   } catch (error) {
     console.log(error);
     return next(new CustomError(500, error.message));
+  } finally {
+    await markUsedAsLoggedOutInFirebaseDB();
   }
 };
 
@@ -138,7 +136,7 @@ async function placeGttOrdersOnUpstox({ script, zone, quantity, entry, sl, targe
     executedGttOrderId = await placeGttOrderAsync(apiInstance, body);
 
     // store this id into firebase
-    if (orderTypeIntradayOrDelivery === "INTRADAY") {
+    if (orderTypeIntradayOrDelivery === "INTRADAY" || orderTypeIntradayOrDelivery === "DELIVERY") {
       // firebase logic here
       await storeExecutedGttOrderIdIntoDB(orderTypeIntradayOrDelivery, executedGttOrderId);
     }
@@ -178,7 +176,8 @@ async function cancelGttOrdersOnUpstox(gttOrderId = null, orderTypeIntradayOrDel
     }
 
     const isOrderCancelled = await cancelGttOrderAsync(apiInstance, body);
-    console.log(`isOrderCancelled ${isOrderCancelled}`);
+    // console.log(`isOrderCancelled ${isOrderCancelled}`);
+    return isOrderCancelled;
   } catch (error) {
     throw error;
   }
@@ -258,28 +257,121 @@ const placeIntradayGttOrdersOnUpstox = async (req, res, next) => {
     return next(new CustomError(500, error.message));
   }
 };
-const cancelIntradayGttOrdersOnUpstox = async (req, res, next) => {
+
+const placeWeeklyDeliveryGttOrdersOnUpstox = async (req, res, next) => {
   try {
-    // 1. fetch executed gtt intraday orders IDs from firebase DB
-    const ordersIdsToCancel = await getExecutedGttOrderIdFromDB("INTRADAY");
-    console.log(ordersIdsToCancel);
-    // 2. Traverse through each ID and make api call to upstox to cancel the gtt order
-    const successfullyCancelledOrders = [];
-    for (const orderID of ordersIdsToCancel) {
-      console.log(`cancelling ${orderID}`);
-      await cancelGttOrdersOnUpstox(orderID, "INTRADAY");
-      // add to successfullyCancelledOrders
-      successfullyCancelledOrders.push(orderID);
+    // 1. fetch intraday orders from google sheet
+    const response = await helperReadOrdersFromGoogleSheet(false, true);
+
+    const weeklyDeliveryOrders = response?.weeklyOrders;
+
+    // 2. check if orders are empty then throw error that orders are empty
+    if (weeklyDeliveryOrders?.length <= 1) {
+      // means only header row is there
+      throw new Error("Weekly Delivery orders fetched from google sheet are Empty !");
+    }
+    // traverse through order array and construct a new array containing only order relevant data
+    const weeklyDeliveryOrdersCoreData = helperKeepOrdersCoreDataOnly(weeklyDeliveryOrders);
+
+    // safeguard
+    if (weeklyDeliveryOrdersCoreData.length <= 0) {
+      throw new Error("weeklyDeliveryOrdersCoreData empty  !");
     }
 
-    // 3. Clean INTRADAY document in firebase DB with empty Array []
-    // await emptyExecutedOrdersIdsArrayInsideDB("INTRADAY");
+    // traverse each order and make api call to upstox
+    const executedOrdersReponse = [];
+    for (const orderData of weeklyDeliveryOrdersCoreData) {
+      const executedGttOrderId = await placeGttOrdersOnUpstox(orderData, "DELIVERY");
+      const orderSignature = `${orderData?.script} ${orderData?.zone} ${orderData?.quantity} ${orderData?.entry} ${orderData?.sl} ${orderData?.target}`;
+
+      if (!executedGttOrderId) {
+        executedOrdersReponse.push(`Failed to place Weekly Delivery GTT order ${orderSignature}`);
+      } else {
+        console.log(`executed order ${executedGttOrderId}`);
+        executedOrdersReponse.push(`Successfully Executed Weekly Delivery GTT order (${executedGttOrderId}) ${orderSignature}`);
+      }
+    }
+
+    // Send response
+    res.status(200).json({
+      success: true,
+      apiData: {
+        message: executedOrdersReponse,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return next(new CustomError(500, error.message));
+  }
+};
+
+const cancelAllWeeklyDeliveryGttOrdersOnUpstox = async (req, res, next) => {
+  try {
+    // 1. fetch executed gtt weekly delivery orders IDs from firebase DB
+    const ordersIdsToCancel = await getExecutedGttOrderIdFromDB("DELIVERY");
+    // 2. Traverse through each ID and make api call to upstox to cancel the gtt order
+    const successfullyCancelledOrders = [];
+    const failedToCancelledOrders = [];
+    if (ordersIdsToCancel.length <= 0) {
+      throw new Error("There were no GTT orders to cancel in DB!");
+    }
+    for (const orderID of ordersIdsToCancel) {
+      // console.log(`cancelling ${orderID}`);
+      const isGttOrderSuccessfullyCancelled = await cancelGttOrdersOnUpstox(orderID, "DELIVERY");
+      if (isGttOrderSuccessfullyCancelled) {
+        successfullyCancelledOrders.push(orderID);
+      } else {
+        failedToCancelledOrders.push(orderID);
+      }
+    }
+
+    // 3. Clean DELIVERY document in firebase DB with empty Array []
+    await emptyExecutedOrdersIdsArrayInsideDB("DELIVERY");
 
     // Send response
     res.status(200).json({
       success: true,
       apiData: {
         successfullyCancelledOrders,
+        failedToCancelledOrders,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return next(new CustomError(500, error.message));
+  }
+};
+
+const cancelAllIntradayGttOrdersOnUpstox = async (req, res, next) => {
+  try {
+    // 1. fetch executed gtt intraday orders IDs from firebase DB
+    const ordersIdsToCancel = await getExecutedGttOrderIdFromDB("INTRADAY");
+    // console.log(ordersIdsToCancel);
+    // 2. Traverse through each ID and make api call to upstox to cancel the gtt order
+    const successfullyCancelledOrders = [];
+    const failedToCancelledOrders = [];
+    if (ordersIdsToCancel.length <= 0) {
+      throw new Error("There were no GTT orders to cancel in DB!");
+    }
+    for (const orderID of ordersIdsToCancel) {
+      // console.log(`cancelling ${orderID}`);
+      const isGttOrderSuccessfullyCancelled = await cancelGttOrdersOnUpstox(orderID, "INTRADAY");
+      if (isGttOrderSuccessfullyCancelled) {
+        successfullyCancelledOrders.push(orderID);
+      } else {
+        failedToCancelledOrders.push(orderID);
+      }
+    }
+
+    // 3. Clean INTRADAY document in firebase DB with empty Array []
+    await emptyExecutedOrdersIdsArrayInsideDB("INTRADAY");
+
+    // Send response
+    res.status(200).json({
+      success: true,
+      apiData: {
+        successfullyCancelledOrders,
+        failedToCancelledOrders,
       },
     });
   } catch (error) {
@@ -292,6 +384,8 @@ const upstoxController = {
   isUserConnectedWithUpStoxServer,
   logoutUserFromUpstox,
   placeIntradayGttOrdersOnUpstox,
-  cancelIntradayGttOrdersOnUpstox,
+  placeWeeklyDeliveryGttOrdersOnUpstox,
+  cancelAllIntradayGttOrdersOnUpstox,
+  cancelAllWeeklyDeliveryGttOrdersOnUpstox,
 };
 export default upstoxController;

@@ -3,8 +3,7 @@ import { useEffect } from "react";
 import { useState } from "react";
 import urls from "../../urls.mjs";
 
-export default function Header() {
-  const [stateIsUserLoggedIn, setStateIsUserLoggedIn] = useState(false);
+export default function Header({ stateIsUserLoggedIn, setStateIsUserLoggedIn }) {
   const [stateLoginURL, setStateLoginURL] = useState(null);
 
   async function checkLoginStatus() {
