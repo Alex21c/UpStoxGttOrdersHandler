@@ -23,8 +23,14 @@ npm run build
 npm install -g serve
 ```
 
-## Access forntEnd dist using serve bat file
+## To Launch forntEnd Server using npm serve package
 
 ```bash
-FrontEnd/launchFrontEnd.bat
+frontEnd/launchFrontEnd.bat
+```
+
+## To launch backend node server
+
+```bash
+backEnd/launchBackEnd.bat
 ```
