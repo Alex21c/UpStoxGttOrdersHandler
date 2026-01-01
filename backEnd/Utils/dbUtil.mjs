@@ -1,3 +1,4 @@
+import jwt from "jsonwebtoken";
 import { google } from "googleapis";
 import fs from "fs";
 import { db, admin } from "../firebase.js";
@@ -5,6 +6,22 @@ export async function markUsedAsLoggedOutInFirebaseDB() {
   await db.collection("brokerTokens").doc("upstox").set({
     isUserLoggedIn: false,
   });
+}
+export function isJwtExpired(token) {
+  try {
+    const decoded = jwt.decode(token);
+    if (!decoded || !decoded.exp) {
+      // Token has no expiry → treat as expired
+      return true;
+    }
+
+    const currentTime = Math.floor(Date.now() / 1000); // seconds
+    return decoded.exp < currentTime;
+  } catch (error) {
+    // Malformed token → expired
+    console.log(error);
+    return true;
+  }
 }
 
 export async function storeExecutedGttOrderIdIntoDB(orderTypeIntradayOrDelivery = "INTRADAY", orderId) {

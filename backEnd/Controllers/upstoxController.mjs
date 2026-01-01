@@ -1,3 +1,4 @@
+import { isJwtExpired } from "../Utils/dbUtil.mjs";
 import CustomError from "../Utils/CustomError.mjs";
 import "dotenv/config";
 import dotenv from "dotenv";
@@ -61,11 +62,18 @@ const isUserConnectedWithUpStoxServer = async (req, res, next) => {
     if (!doc.exists) {
       throw new Error("upstox document doesn't exit in firebase DB !");
     }
+    // is upstox token expired
+    const accessToken = await fetchUpstoxAccessTokenFromFirebaseDB();
+    let isUserLoggedIn = doc.data()?.isUserLoggedIn;
+    if (!accessToken || isJwtExpired(accessToken) == true) {
+      isUserLoggedIn = false;
+    }
 
+    // return response
     res.status(200).json({
       success: true,
       apiData: {
-        isUserLoggedIn: doc.data()?.isUserLoggedIn,
+        isUserLoggedIn,
         loginURL: `https://api.upstox.com/v2/login/authorization/dialog?client_id=${process.env.API_KEY}&redirect_uri=${process.env.REDIRECT_URL}`,
       },
     });
@@ -77,6 +85,11 @@ const isUserConnectedWithUpStoxServer = async (req, res, next) => {
 
 async function placeGttOrdersOnUpstox({ script, zone, quantity, entry, sl, target, nseEqScriptKey }, orderTypeIntradayOrDelivery = "INTRADAY") {
   try {
+    // safeguard
+    if (script === "PLACEHOLDER_SCRIPT" || quantity == 0) {
+      throw new Error(`order placement skipped for script: ${script}, quantity: ${quantity}`);
+    }
+
     OAUTH2.accessToken = await fetchUpstoxAccessTokenFromFirebaseDB();
     if (OAUTH2.accessToken == null) {
       throw new Error("Access token fetched from firebase DB is Null !");
@@ -234,7 +247,12 @@ const placeIntradayGttOrdersOnUpstox = async (req, res, next) => {
     // traverse each order and make api call to upstox
     const executedOrdersReponse = [];
     for (const orderData of intradayOrdersCoreData) {
-      const executedGttOrderId = await placeGttOrdersOnUpstox(orderData, "INTRADAY");
+      let executedGttOrderId = null;
+      try {
+        executedGttOrderId = await placeGttOrdersOnUpstox(orderData, "INTRADAY");
+      } catch (error) {
+        console.log(error.message);
+      }
       const orderSignature = `${orderData?.script} ${orderData?.zone} ${orderData?.quantity} ${orderData?.entry} ${orderData?.sl} ${orderData?.target}`;
 
       if (!executedGttOrderId) {
@@ -281,7 +299,12 @@ const placeWeeklyDeliveryGttOrdersOnUpstox = async (req, res, next) => {
     // traverse each order and make api call to upstox
     const executedOrdersReponse = [];
     for (const orderData of weeklyDeliveryOrdersCoreData) {
-      const executedGttOrderId = await placeGttOrdersOnUpstox(orderData, "DELIVERY");
+      let executedGttOrderId = null;
+      try {
+        executedGttOrderId = await placeGttOrdersOnUpstox(orderData, "DELIVERY");
+      } catch (error) {
+        console.log(error.message);
+      }
       const orderSignature = `${orderData?.script} ${orderData?.zone} ${orderData?.quantity} ${orderData?.entry} ${orderData?.sl} ${orderData?.target}`;
 
       if (!executedGttOrderId) {
