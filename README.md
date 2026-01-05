@@ -11,6 +11,16 @@ REDIRECT_URL=http://localhost:3000/callback
 FRONTEND_URL=http://localhost:4000
 ```
 
+## install frontEnd and Backend packages
+
+```javascript
+cd frontEnd
+npm install
+
+cd backEnd
+npm install
+```
+
 ## Create a dist of frontEnd using build command
 
 ```javascript
