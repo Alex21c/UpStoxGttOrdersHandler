@@ -19,6 +19,7 @@ npm install
 
 cd backEnd
 npm install
+npm install -g serve
 ```
 
 ## Create a dist of frontEnd using build command
