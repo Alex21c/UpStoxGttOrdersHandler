@@ -15,6 +15,8 @@ import { markUsedAsLoggedOutInFirebaseDB } from "../Utils/dbUtil.mjs";
 let defaultClient = UpstoxClient.ApiClient.instance;
 var OAUTH2 = defaultClient.authentications["OAUTH2"];
 let apiInstance = new UpstoxClient.OrderApiV3();
+let apiInstanceQuotApi = new UpstoxClient.MarketQuoteApi();
+let apiVersion = "2.0";
 
 function helperLogoutFromUpstox(apiInstance, apiVersion) {
   return new Promise((resolve, reject) => {
@@ -30,7 +32,6 @@ function helperLogoutFromUpstox(apiInstance, apiVersion) {
 const logoutUserFromUpstox = async (req, res, next) => {
   try {
     let apiInstance = new UpstoxClient.LoginApi();
-    let apiVersion = "2.0";
 
     // logout
     let defaultClient = UpstoxClient.ApiClient.instance;
@@ -82,17 +83,50 @@ const isUserConnectedWithUpStoxServer = async (req, res, next) => {
     return next(new CustomError(500, error.message));
   }
 };
+function getLTP(apiInstanceQuotApi, apiVersion, nseEqScriptKey) {
+  return new Promise((resolve, reject) => {
+    apiInstanceQuotApi.ltp(nseEqScriptKey, apiVersion, (error, data, response) => {
+      if (error) {
+        console.error(error.response?.text);
+        return reject(error);
+      }
 
-async function placeGttOrdersOnUpstox({ script, zone, quantity, entry, sl, target, nseEqScriptKey }, orderTypeIntradayOrDelivery = "INTRADAY") {
+      try {
+        const objResponse = data?.data;
+        const firstKey = Object.keys(objResponse)[0];
+        // console.log(firstKey);
+        const lastPrice = objResponse[firstKey].lastPrice;
+
+        resolve(lastPrice); // return gtt order id
+      } catch (err) {
+        reject(err);
+      }
+    });
+  });
+}
+
+async function placeGttOrdersOnUpstox({ script, zone, quantity, entry, sl, target, risk, nseEqScriptKey }, orderTypeIntradayOrDelivery = "INTRADAY") {
   try {
     // safeguard
     if (script === "PLACEHOLDER_SCRIPT" || quantity == 0) {
       throw new Error(`order placement skipped for script: ${script}, quantity: ${quantity}`);
     }
-
     OAUTH2.accessToken = await fetchUpstoxAccessTokenFromFirebaseDB();
     if (OAUTH2.accessToken == null) {
       throw new Error("Access token fetched from firebase DB is Null !");
+    }
+
+    // safeguard IF Risk is greater than MAX_RISK_PER_TRADE then skip order
+    if (Math.abs(risk) > Math.abs(process.env.MAX_RISK_PER_TRADE)) {
+      throw new Error(`order placement skipped for script: ${script}, quantity: ${quantity}, RISK (${risk}) is greater than MAX_RISK_PER_TRADE (${process.env.MAX_RISK_PER_TRADE})`);
+    }
+
+    // Safeguard IF LTP is not respecting the SL
+    const scriptLTP = await getLTP(apiInstanceQuotApi, apiVersion, nseEqScriptKey);
+    if (zone === "DZ" && scriptLTP <= sl) {
+      throw new Error(`order placement skipped for script: ${script}, quantity: ${quantity}, ${scriptLTP} <= ${sl}, LTP is not respecting the SL`);
+    } else if (zone === "SZ" && scriptLTP >= sl) {
+      throw new Error(`order placement skipped for script: ${script}, quantity: ${quantity}, ${scriptLTP} >= ${sl}, LTP is not respecting the SL`);
     }
   } catch (error) {
     throw error;
@@ -167,6 +201,7 @@ async function cancelGttOrdersOnUpstox(gttOrderId = null, orderTypeIntradayOrDel
     } else if (orderTypeIntradayOrDelivery !== "INTRADAY" && orderTypeIntradayOrDelivery !== "DELIVERY") {
       throw new Error(`invalid orderTypeIntradayOrDelivery : ${orderTypeIntradayOrDelivery} `);
     }
+
     OAUTH2.accessToken = await fetchUpstoxAccessTokenFromFirebaseDB();
     if (OAUTH2.accessToken == null) {
       throw new Error("Access token fetched from firebase DB is Null !");
@@ -214,8 +249,9 @@ function helperKeepOrdersCoreDataOnly(orders = null) {
         const entry = data[6];
         const sl = data[7];
         const target = data[8];
+        const risk = data[9];
         const nseEqScriptKey = data[12];
-        ordersCoreData.push({ script, zone, quantity, entry, sl, target, nseEqScriptKey });
+        ordersCoreData.push({ script, zone, quantity, entry, sl, target, risk, nseEqScriptKey });
       } catch (error) {
         throw new Error(error);
       }
@@ -248,15 +284,20 @@ const placeIntradayGttOrdersOnUpstox = async (req, res, next) => {
     const executedOrdersReponse = [];
     for (const orderData of intradayOrdersCoreData) {
       let executedGttOrderId = null;
+      let isThereAnyError = false;
+      let errorMsg = "";
       try {
         executedGttOrderId = await placeGttOrdersOnUpstox(orderData, "INTRADAY");
       } catch (error) {
+        isThereAnyError = true;
+        errorMsg = error?.message;
         console.log(error.message);
       }
       const orderSignature = `${orderData?.script} ${orderData?.zone} ${orderData?.quantity} ${orderData?.entry} ${orderData?.sl} ${orderData?.target}`;
 
       if (!executedGttOrderId) {
         executedOrdersReponse.push(`Failed to place intraday GTT order ${orderSignature}`);
+        executedOrdersReponse.push(errorMsg);
       } else {
         console.log(`executed order ${executedGttOrderId}`);
         executedOrdersReponse.push(`Successfully Executed intraday GTT order (${executedGttOrderId}) ${orderSignature}`);
@@ -300,15 +341,20 @@ const placeWeeklyDeliveryGttOrdersOnUpstox = async (req, res, next) => {
     const executedOrdersReponse = [];
     for (const orderData of weeklyDeliveryOrdersCoreData) {
       let executedGttOrderId = null;
+      let isThereAnyError = false;
+      let errorMsg = "";
       try {
         executedGttOrderId = await placeGttOrdersOnUpstox(orderData, "DELIVERY");
       } catch (error) {
+        isThereAnyError = true;
+        errorMsg = error?.message;
         console.log(error.message);
       }
       const orderSignature = `${orderData?.script} ${orderData?.zone} ${orderData?.quantity} ${orderData?.entry} ${orderData?.sl} ${orderData?.target}`;
 
       if (!executedGttOrderId) {
         executedOrdersReponse.push(`Failed to place Weekly Delivery GTT order ${orderSignature}`);
+        executedOrdersReponse.push(errorMsg);
       } else {
         console.log(`executed order ${executedGttOrderId}`);
         executedOrdersReponse.push(`Successfully Executed Weekly Delivery GTT order (${executedGttOrderId}) ${orderSignature}`);

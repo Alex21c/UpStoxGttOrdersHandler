@@ -9,6 +9,8 @@ API_KEY=get from upstox
 API_SECRET=get from upstox
 REDIRECT_URL=http://localhost:3000/callback
 FRONTEND_URL=http://localhost:4000
+GOOGLE_ORDERS_SHEET_ID=googleSheetIDWhichContainsIntradayAndWeeklyDataSubsheets
+MAX_RISK_PER_TRADE=-50
 ```
 
 ## install frontEnd and Backend packages
