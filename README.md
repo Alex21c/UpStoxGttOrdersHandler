@@ -36,6 +36,12 @@ npm run build
 npm install -g serve
 ```
 
+## to update serve package
+
+```javascript
+npm install -g serve@latest
+```
+
 ## To Launch forntEnd Server using npm serve package
 
 ```bash

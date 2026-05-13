@@ -1,4 +1,4 @@
-const serverURL = "http://localhost:3000";
+const serverURL = "";
 
 const urls = {
   readOrdersFromGoogleSheet: `${serverURL}/api/v1/googleSheet/readOrdersFromGoogleSheet`,
